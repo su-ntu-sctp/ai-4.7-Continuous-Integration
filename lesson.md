@@ -1,10 +1,8 @@
-# Lesson: Continuous Integration with CircleCI
-
----
+# Lesson 4.7: Continuous Integration with CircleCI
 
 ## Learning Objectives
 
-By the end of this lesson, learners will be able to:
+By the end of this lesson, you will be able to:
 
 1. **Explain** what Continuous Integration is and identify its key benefits in modern software development teams
 2. **Configure** a CircleCI pipeline with build, test, and publish jobs for a Spring Boot application
@@ -13,7 +11,7 @@ By the end of this lesson, learners will be able to:
 
 ---
 
-## Preparation
+## Prerequisites
 
 Before starting this lesson, ensure you have:
 
@@ -21,153 +19,220 @@ Before starting this lesson, ensure you have:
 - Maven (already installed)
 - Docker (already installed)
 - [CircleCI Account](https://circleci.com/) - Create one using GitHub
-- [Docker Hub Account](https://hub.docker.com) - Already created in Lesson 3
+- [Docker Hub Account](https://hub.docker.com) - Already created in Lesson 4.3
 - GitHub account
 - Your **devops-demo** Spring Boot project from previous lessons
 
 ---
 
-## Lesson Overview
+## Introduction
 
 In this lesson, you will learn to automate your build, test, and deployment process using Continuous Integration. You will configure CircleCI to automatically build your Spring Boot application, run tests, and publish Docker images to Docker Hub whenever you push code to GitHub.
 
 ---
 
-## Part 1 - Intro to Continuous Integration
+## Part 1 - Understanding Continuous Integration (20 minutes)
 
-### What is Continuous Integration (CI)
+### What is Continuous Integration (CI)?
 
 > Continuous Integration is a software development practice where members of a team integrate their work frequently, usually each person integrates at least daily - leading to multiple integrations per day. Each integration is verified by an automated build (including tests) to detect integration errors as quickly as possible. Many teams find that this approach leads to significantly reduced integration problems and allows a team to develop cohesive software more rapidly. - *Excerpt from [Martin Fowler](https://martinfowler.com/articles/continuousIntegration.html)*
 
-### Why is Continuous Integration Needed? 
+### Why is Continuous Integration Needed?
 
 In the past, developers on a team might work in isolation for an extended period of time and only merge their changes to the main branch once their work was completed. This made merging code changes difficult and time-consuming, and also resulted in bugs accumulating for a long time without correction. These factors made it harder to deliver updates to customers quickly.
 
+**The Problem:**
+- Developers work on features for weeks/months
+- When they merge, massive conflicts occur
+- Integration becomes painful
+- Bugs hide in code for long periods
+- Deploying updates is risky and slow
+
+**The Solution: Continuous Integration**
+- Integrate code frequently (multiple times per day)
+- Automate builds and tests
+- Catch bugs immediately
+- Small changes = easier to debug
+- Always have working code ready to deploy
+
 ### The Benefits of Continuous Integration
 
-- Improved code quality: CI enables developers to catch errors early in the development process, leading to better code quality and fewer bugs.
-- Faster feedback: CI provides rapid feedback to developers, allowing them to quickly identify and fix issues.
-- Faster time to market: CI enables teams to deliver high-quality software faster, reducing the time to market for new features.
-- Improved collaboration: CI encourages collaboration between developers, enabling them to work together more effectively
+**1. Improved Code Quality** - Catch errors early, automated tests run on every commit, fewer bugs reach production
 
-### How does Continuous Integration Work? 
+**2. Faster Feedback** - Know within minutes if your code broke something, don't wait days to discover issues
+
+**3. Faster Time to Market** - Deploy multiple times per day instead of monthly, competitive advantage
+
+**4. Improved Collaboration** - Shared responsibility for code quality, everyone sees build status
+
+### How Does Continuous Integration Work?
 
 With continuous integration, developers frequently commit to a shared repository using a version control system such as Git. Prior to each commit, developers may choose to run local unit tests on their code as an extra verification layer before integrating. A continuous integration service automatically builds and runs unit tests on the new code changes to immediately surface any errors.
 
+**The CI Workflow:**
+
+```
+1. Developer writes code
+   ↓
+2. Developer commits code to Git
+   ↓
+3. Developer pushes to GitHub
+   ↓
+4. GitHub notifies CI server (CircleCI)
+   ↓
+5. CI server pulls code
+   ↓
+6. CI server builds application
+   ↓
+7. CI server runs automated tests
+   ↓
+8. CI server publishes build artifacts (Docker image)
+   ↓
+9. Developer receives feedback (pass/fail)
+```
+
 ### CI Tools
-For this module, we will be using CircleCI as our CI/CD workflow tool but there are other tools available online:
-1. [GitHub Actions](https://github.com/features/actions)
-2. [GitLab CI/CD](https://docs.gitlab.com/ee/ci/)
-3. [Bamboo](https://www.atlassian.com/software/bamboo)
-4. [Jenkins](https://www.jenkins.io/)
 
-Each of these tools have their own advantages and disadvantages so it is up to the team to determine which CI/CD workflow tool to use.
+For this module, we will be using **CircleCI** but other popular CI tools include:
+- GitHub Actions, GitLab CI/CD, Jenkins, Azure DevOps
 
-### CI Pipeline
+Each tool has advantages and disadvantages. Teams choose based on their needs.
 
-To achieve Continuous Integration, a CI Pipeline is created that would contain the list of jobs and workflows needed. 
+### CI Pipeline Components
 
-A pipeline is a list of workflows that would be done in sequence. The workflow has a series of jobs that are defined by the developer. The pipeline can be automated such that any code changes done will trigger the pipeline and run the jobs.
+To achieve Continuous Integration, a **CI Pipeline** is created containing jobs and workflows.
 
-There are typically three jobs in the CI Pipeline (can be more based on the organization's needs):
-1. Build / compile
-2. Run tests
-3. Upon tests passed, publish container image to registry and proceed to the CD Pipeline
+**Pipeline:** A sequence of jobs that run automatically when code changes
+
+**Workflow:** Defines which jobs run and in what order
+
+**Jobs:** Individual tasks (build, test, publish)
+
+**A typical CI Pipeline has three jobs:**
+
+1. **Build / Compile**
+   - Download dependencies
+   - Compile source code
+   - Package application (create JAR file)
+
+2. **Test**
+   - Run unit tests
+   - Run integration tests
+   - Verify code quality
+
+3. **Publish**
+   - Build Docker image
+   - Push to container registry (Docker Hub)
+   - Make artifact available for deployment
+
+**If any job fails, the pipeline stops.** This prevents broken code from reaching production.
 
 ---
 
-## Part 2 - Preparing Your DevOps Demo Project for CI
+## Part 2 - Preparing Your DevOps Demo Project for CI (20 minutes)
 
 Before setting up CircleCI, we need to prepare your Spring Boot project with tests and verify all dependencies.
 
-### Step 1: Verify Your pom.xml Has Test Dependencies
+### Step 1: Verify Your pom.xml
 
-Open your `pom.xml` file and check if you have the `spring-boot-starter-test` dependency. It should look like this:
+Open your `pom.xml` file and check you have these dependencies:
 
 ```xml
-<dependencies>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-web</artifactId>
-    </dependency>
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
     
-    <dependency>
-        <groupId>org.postgresql</groupId>
-        <artifactId>postgresql</artifactId>
-        <scope>runtime</scope>
-    </dependency>
-    
-    <dependency>
+    <parent>
         <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-data-jpa</artifactId>
-    </dependency>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.2.0</version>
+        <relativePath/>
+    </parent>
     
-    <!-- Test dependency - REQUIRED for JUnit tests -->
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-test</artifactId>
-        <scope>test</scope>
-    </dependency>
-</dependencies>
+    <groupId>com.example</groupId>
+    <artifactId>devops-demo</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>devops-demo</name>
+    <description>DevOps demo application</description>
+    
+    <properties>
+        <java.version>21</java.version>
+    </properties>
+    
+    <dependencies>
+        <!-- Spring Boot Web Starter -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        
+        <!-- Test dependency - REQUIRED for JUnit tests -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+    
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>
 ```
 
-**If you don't see `spring-boot-starter-test`, add it now.** This dependency includes JUnit and testing utilities.
+**Key points:**
+- ✅ Spring Boot 3.2.0
+- ✅ Java 21
+- ✅ spring-boot-starter-web (for REST endpoints)
+- ✅ spring-boot-starter-test (for JUnit tests)
 
-### Step 2: Fix .dockerignore for CI
+**That's it!** Simple app, simple dependencies.
 
-From Lesson 2, you may have a `.dockerignore` file that blocks all of `target/`. This will cause problems in CI because Docker needs to copy the JAR file.
+### Step 2: Verify Your DemoController
 
-**Update your `.dockerignore` to this:**
+Make sure you have `src/main/java/com/example/devopsdemo/controller/DemoController.java`:
 
-```
-# Build output (but allow JAR files)
-target/classes/
-target/test-classes/
-target/generated-sources/
-target/maven-status/
+```java
+package com.example.devopsdemo.controller;
 
-# IDE files
-.idea/
-*.iml
-.vscode/
-*.swp
-*.swo
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-# OS files
-.DS_Store
-Thumbs.db
+/**
+ * Simple REST controller for DevOps demo
+ */
+@RestController
+public class DemoController {
 
-# Git
-.git
-.gitignore
-
-# Logs
-*.log
-```
-
-**Important:** Notice we exclude `target/classes/` but NOT `target/` itself. This allows `target/*.jar` to be copied by Docker.
-
-### Step 3: Create Test Configuration
-
-Create a file: `src/main/resources/application-test.properties`
-
-Add this content:
-
-```properties
-# Test configuration - disables database requirement for web layer tests
-spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+    /**
+     * Hello endpoint - returns a simple message
+     * This endpoint will be tested by our CI pipeline
+     */
+    @GetMapping("/hello")
+    public String hello() {
+        return "DevOps demo application is running!";
+    }
+}
 ```
 
-This prevents database connection errors when running simple web layer tests.
+**Simple app with one endpoint: `/hello`**
 
-### Step 4: Add a Simple Test to Your Project
+### Step 3: Add a Test for Your Controller
 
 Create this directory structure if it doesn't exist:
 ```
 src/test/java/com/example/devopsdemo/controller/
 ```
 
-Create a new file: `DemoControllerTest.java`
+Create file: `DemoControllerTest.java`
 
 ```java
 package com.example.devopsdemo.controller;
@@ -175,7 +240,6 @@ package com.example.devopsdemo.controller;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -187,7 +251,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * This test verifies that the /hello endpoint returns the expected message
  */
 @WebMvcTest(DemoController.class)
-@TestPropertySource(locations = "classpath:application-test.properties")
 public class DemoControllerTest {
 
     @Autowired
@@ -209,33 +272,32 @@ public class DemoControllerTest {
 }
 ```
 
-**Key Points:**
-- `@WebMvcTest` - Only tests the web layer (controllers)
-- `@TestPropertySource` - Uses test configuration (no database needed)
-- `mockMvc` - Simulates HTTP requests without starting full server
-
 ### Understanding the Test
 
 Let's break down what this test does:
 
 **1. Annotations:**
-- `@WebMvcTest(DemoController.class)` - Tells Spring Boot to only load the web layer for testing, specifically the DemoController. This is much faster than loading the entire application context.
-- `@TestPropertySource(locations = "classpath:application-test.properties")` - Loads test-specific configuration that disables database requirements
-- `@Autowired` - Injects MockMvc, which simulates HTTP requests
-- `@Test` - Marks this method as a test case that JUnit will run
+- `@WebMvcTest(DemoController.class)` - Tells Spring Boot to only load the web layer for testing, specifically the DemoController. This is much faster than loading the entire application.
+- `@Autowired` - Injects MockMvc for simulating HTTP requests
+- `@Test` - Marks this method as a JUnit test case
 
 **2. MockMvc:**
 - `mockMvc` simulates HTTP requests without starting a full server
 - This is faster than integration tests
-- Perfect for testing controllers in isolation
-- Allows you to verify HTTP status codes, response bodies, headers, etc.
+- Perfect for testing controllers
+- Allows verification of HTTP status codes, response bodies, headers, etc.
 
 **3. Test Logic:**
-- `mockMvc.perform(get("/hello"))` - Simulates a GET request to the /hello endpoint
+- `mockMvc.perform(get("/hello"))` - Simulates a GET request to /hello
 - `.andExpect(status().isOk())` - Verifies HTTP status is 200 OK
-- `.andExpect(content().string("DevOps demo application is running!"))` - Verifies the response body matches the expected string exactly
+- `.andExpect(content().string("..."))` - Verifies response body matches exactly
 
-### Step 5: Run the Test Locally
+**Why this test matters:**
+- Ensures your endpoint works correctly
+- CI will run this on every code push
+- If someone breaks the endpoint, CI will catch it immediately
+
+### Step 4: Run the Test Locally
 
 Verify the test works before pushing to GitHub.
 
@@ -259,12 +321,13 @@ mvn test
 
 **If you see errors:**
 - Check `spring-boot-starter-test` is in pom.xml
-- Check `application-test.properties` exists
-- Check test file is in correct package
+- Check test file is in correct package: `com.example.devopsdemo.controller`
+- Check class name matches: `DemoControllerTest.java`
+- Run `mvn clean test` to clear old builds
 
-### Step 6: Verify Dockerfile Exists
+### Step 5: Verify Your Dockerfile
 
-Make sure you have a `Dockerfile` in your project root from Lesson 2:
+Make sure you have a `Dockerfile` in your project root from Lesson 4.2:
 
 ```bash
 ls -la Dockerfile
@@ -281,9 +344,15 @@ EXPOSE 8080
 CMD ["java", "-jar", "app.jar"]
 ```
 
+**This Dockerfile:**
+- Uses Java 21 Alpine image (lightweight)
+- Copies the JAR file built by Maven
+- Exposes port 8080
+- Runs the Spring Boot application
+
 ---
 
-## Part 3 - Push Your Project to GitHub
+## Part 3 - Push Your Project to GitHub (15 minutes)
 
 CircleCI needs your code in a GitHub repository to run CI pipelines.
 
@@ -292,11 +361,12 @@ CircleCI needs your code in a GitHub repository to run CI pipelines.
 1. Go to [GitHub](https://github.com) and sign in
 2. Click the **+** icon in the top-right corner
 3. Click **New repository**
-4. Repository name: `devops-demo`
-5. Description: "DevOps demo Spring Boot application for CI/CD"
-6. Choose **Public** (CircleCI free tier works best with public repos)
-7. **Do NOT** initialize with README, .gitignore, or license
-8. Click **Create repository**
+4. Fill in details:
+   - **Repository name:** `devops-demo`
+   - **Description:** "DevOps demo Spring Boot application for CI/CD"
+   - **Public** (CircleCI free tier works best with public repos)
+   - **Do NOT** initialize with README, .gitignore, or license
+5. Click **Create repository**
 
 ### Step 2: Initialize Git in Your Project
 
@@ -310,7 +380,7 @@ git init
 
 **Create .gitignore file:**
 
-Create a file named `.gitignore` in your project root with this content:
+Create a file named `.gitignore` in your project root:
 
 ```
 # Maven
@@ -362,81 +432,61 @@ After running these commands, refresh your GitHub repository page. You should se
 
 ---
 
-## Part 4 - CircleCI Setup
+## Part 4 - CircleCI Setup (15 minutes)
 
 ### What is CircleCI?
 
-CircleCI is a CI tool that simplifies parts of DevOps processes, letting engineering teams get to building products by allowing teams to build fully-automated pipelines, from testing to deployment.
+CircleCI is a cloud-based CI/CD platform that automates your build, test, and deployment processes. It integrates seamlessly with GitHub and runs your pipeline whenever you push code.
 
-### CircleCI Account Preparation and Setup
+**Why CircleCI?**
+- ✅ Easy setup (connects to GitHub in minutes)
+- ✅ Free tier for learning
+- ✅ Cloud-based (no server to maintain)
+- ✅ Fast builds with parallelization
+- ✅ Great documentation
 
-Step 1: Go to [circleci.com](https://circleci.com/)
+### Create CircleCI Account
 
-Step 2: Click **Sign Up** and choose **Sign up with GitHub**
+**Step 1:** Go to [circleci.com](https://circleci.com/)
 
-Step 3: Authorize CircleCI to access your GitHub account
+**Step 2:** Click **Sign Up** and choose **Sign up with GitHub**
 
-Step 4: After signing in, you'll see your GitHub repositories
+**Step 3:** Authorize CircleCI to access your GitHub account
 
-Step 5: Find your `devops-demo` repository and click **Set Up Project**
+**Step 4:** After signing in, you'll see your GitHub repositories
 
-Step 6: CircleCI will ask if you want to use an existing config file or create a new one
+**Step 5:** Find your `devops-demo` repository and click **Set Up Project**
 
-Step 7: Select **"Use Existing Config"** (we'll create the config file next)
+**Step 6:** CircleCI will ask if you want to use an existing config file or create a new one
 
-### Optional - CircleCI CLI
-
-Before committing changes to Git, it is good to run the command `circleci config validate` to ensure the `config.yml` file has a valid configuration. Install CircleCI CLI [here](https://circleci.com/docs/local-cli/#installation).
+**Step 7:** Select **"Use Existing Config"** (we'll create the config file next)
 
 ---
 
-## Part 5 - CI Configuration
+## Part 5 - Building the CI Pipeline (50 minutes)
+
+We will create three jobs for our CI pipeline:
+1. **Build** - Compile and package the application
+2. **Test** - Run automated tests
+3. **Publish** - Build and push Docker image to Docker Hub
 
 ### CircleCI's config.yml
 
-The `config.yml` is a configuration file used to define and configure the pipeline for the project. It is stored in the `.circleci` directory of the project's repository and provides instructions to CircleCI on how to build, test, and deploy your code.
+The `config.yml` tells CircleCI what to do, when, and where. It has:
+- **Jobs** - Specific tasks (build, test, publish)
+- **Workflows** - Defines sequence and dependencies
+- **Executors** - Execution environment (Docker images)
 
-The `config.yml` consists of several parts that work together to define the pipeline. Here are some that will be encountered in the next few lessons.
+**Location:** `.circleci/config.yml` (must be in this exact location)
 
-1. **Jobs**: They describe specific tasks or steps in your CI/CD pipeline.
-```yml
-build:
-  docker:
-    - image: cimg/openjdk:21.0
-  steps:
-    - checkout
-    - run: mvn clean install -DskipTests
-```
+Let's build the pipeline step by step.
 
-2. **Workflows**: They define the sequence and dependencies of jobs within workflows. You can create complex workflows with multiple jobs and conditional logic.
-```yml
-workflows:
-  build_test_workflow:
-    jobs:
-      - build
-      - test:
-          requires:
-            - build
-```
+### Step 1: Create the CircleCI Configuration File (5 minutes)
 
-3. **Executors**: Specify the execution environment for jobs.
-```yml
-executors:
-  java-executor:
-    docker:
-      - image: cimg/openjdk:21.0
-```
+In your **devops-demo** project, create this directory:
 
-4. **Environment variables**: Used to store sensitive data or configuration options
-
-More can be found in the [documentation](https://circleci.com/docs/) of CircleCI.
-
-### Step 1: Create the CircleCI Configuration File
-
-In your **devops-demo** project, create this directory structure:
-
-```
-.circleci/
+```bash
+mkdir .circleci
 ```
 
 Inside `.circleci/`, create a file named `config.yml`
@@ -448,12 +498,14 @@ devops-demo/
 ├── .circleci/
 │   └── config.yml
 ├── src/
+│   ├── main/
+│   └── test/
 ├── pom.xml
 ├── Dockerfile
-└── docker-compose.yml
+└── .gitignore
 ```
 
-### Step 2: Start with Basic Configuration
+### Step 2: Start with Version Declaration
 
 Open `.circleci/config.yml` and add:
 
@@ -461,28 +513,18 @@ Open `.circleci/config.yml` and add:
 version: 2.1
 ```
 
-This specifies the CircleCI configuration version.
+This specifies the CircleCI configuration version (2.1 is the latest).
 
 ---
 
-## Part 6 - Building the CI Pipeline
-
-We will create three jobs for our CI pipeline:
-1. **Build** - Compile and package the application
-2. **Test** - Run automated tests
-3. **Publish** - Build and push Docker image to Docker Hub
-
-Let's build these step by step.
-
----
-
-### Job 1: The Build Job
+### Job 1: The Build Job (20 minutes)
 
 In this job, we will:
 1. Use a Java 21 Docker image
 2. Check out code from GitHub
-3. Install Maven dependencies
-4. Build the application (without running tests yet)
+3. Cache Maven dependencies (speeds up builds)
+4. Build the application
+5. Save the JAR file for other jobs
 
 Add this to your `config.yml`:
 
@@ -490,24 +532,38 @@ Add this to your `config.yml`:
 version: 2.1
 
 jobs:
+  # ==========================================
+  # BUILD JOB - Compile and package
+  # ==========================================
   build:
+    # Use CircleCI's Java 21 Docker image
     docker:
       - image: cimg/openjdk:21.0
+    
     steps:
+      # Step 1: Download code from GitHub
       - checkout
+      
+      # Step 2: Restore Maven dependencies from cache (if available)
       - restore_cache:
           keys:
             - maven-deps-{{ checksum "pom.xml" }}
             - maven-deps-
+      
+      # Step 3: Build the application
       - run:
           name: Install dependencies and build
           command: |
             echo "Building the application..."
             mvn clean install -DskipTests
+      
+      # Step 4: Save Maven dependencies to cache for next build
       - save_cache:
           paths:
             - ~/.m2
           key: maven-deps-{{ checksum "pom.xml" }}
+      
+      # Step 5: Save JAR file for other jobs to use
       - persist_to_workspace:
           root: .
           paths:
@@ -516,176 +572,186 @@ jobs:
 
 ### Understanding the Build Job
 
-Let's break down each part of this job in detail:
-
-**1. Docker Image:**
+**Docker Image:**
 ```yml
 docker:
   - image: cimg/openjdk:21.0
 ```
-- `cimg/openjdk:21.0` is CircleCI's optimized Java 21 image
+- CircleCI's optimized Java 21 image
 - Contains Java 21 JDK and Maven pre-installed
-- Optimized for CircleCI with faster startup times
-- This is the environment where all our build commands will run
+- All commands run inside this container
 
-**2. Checkout:**
+**Checkout:**
 ```yml
 - checkout
 ```
-- Downloads your code from GitHub into the CircleCI environment
-- This is the first step in almost every CircleCI job
-- Without this, CircleCI wouldn't have your code to build!
+- Downloads your code from GitHub
+- First step in almost every CircleCI job
 
-**3. Cache Restoration:**
+**Cache Restoration:**
 ```yml
 - restore_cache:
     keys:
       - maven-deps-{{ checksum "pom.xml" }}
       - maven-deps-
 ```
-- Restores previously downloaded Maven dependencies from cache
-- Speeds up builds significantly (avoids re-downloading dependencies every time)
-- `{{ checksum "pom.xml" }}` creates a unique key based on pom.xml content
-- If pom.xml changes, cache is invalidated and dependencies are re-downloaded
-- If exact match not found, falls back to `maven-deps-` (partial match)
-- **Why this matters:** Without caching, Maven would download all dependencies every time, making builds 5-10x slower!
+- Restores previously downloaded Maven dependencies
+- `{{ checksum "pom.xml" }}` creates unique key based on pom.xml content
+- If pom.xml changes, cache is invalidated
+- **Without caching:** Builds take 5-10x longer!
 
-**4. Build Command:**
+**Build Command:**
 ```yml
 - run:
     name: Install dependencies and build
     command: |
-      echo "Building the application..."
       mvn clean install -DskipTests
 ```
-- `mvn clean` - Removes old build artifacts from target/ directory
-- `mvn install` - Downloads dependencies, compiles code, packages JAR file
-- `-DskipTests` - Skips tests in this job (we'll run them separately in the test job)
-- This separation allows us to see if the build fails vs if tests fail
-- **Why separate build and test?** If build fails, we know it's a compilation error. If test fails, we know the code compiles but has bugs.
+- `mvn clean` - Removes old build artifacts
+- `mvn install` - Downloads dependencies, compiles code, packages JAR
+- `-DskipTests` - Skips tests (we run them in separate job)
 
-**5. Save Cache:**
+**Save Cache:**
 ```yml
 - save_cache:
     paths:
       - ~/.m2
     key: maven-deps-{{ checksum "pom.xml" }}
 ```
-- Saves downloaded Maven dependencies for future builds
-- `~/.m2` is where Maven stores downloaded dependencies on Linux
-- Next build will restore from this cache (much faster!)
-- Cache is only updated if pom.xml changes
+- Saves downloaded dependencies for future builds
+- `~/.m2` is where Maven stores dependencies
+- Next build restores from this cache (much faster!)
 
-**6. Persist to Workspace:**
+**Persist to Workspace:**
 ```yml
 - persist_to_workspace:
     root: .
     paths:
       - target/*.jar
 ```
-- Saves the built JAR file to share with other jobs
-- The test and publish jobs can use this JAR without rebuilding
-- This is different from caching - workspaces pass data between jobs in the same workflow
-- **Key difference:** Cache persists across workflows; workspace only exists within one workflow run
+- Saves JAR file to share with other jobs
+- Test and publish jobs can use this JAR without rebuilding
 
 ---
 
-### Job 2: The Test Job
+### Job 2: The Test Job (20 minutes)
 
 In this job, we will:
 1. Use the same Java 21 Docker image
 2. Check out code
-3. Restore the built JAR from the build job
+3. Restore cached dependencies
 4. Run automated tests
+5. Store test results
 
 Add this job to your `config.yml`:
 
 ```yml
+  # ==========================================
+  # TEST JOB - Run automated tests
+  # ==========================================
   test:
+    # Use CircleCI's Java 21 Docker image
     docker:
       - image: cimg/openjdk:21.0
+    
     steps:
+      # Step 1: Download code from GitHub
       - checkout
+      
+      # Step 2: Restore Maven dependencies from cache
       - restore_cache:
           keys:
             - maven-deps-{{ checksum "pom.xml" }}
             - maven-deps-
+      
+      # Step 3: Run tests
       - run:
           name: Run tests
           command: |
             echo "Running tests..."
             mvn test
+      
+      # Step 4: Store test results for CircleCI UI
       - store_test_results:
           path: target/surefire-reports
+      
+      # Step 5: Store test reports as downloadable artifacts
       - store_artifacts:
           path: target/surefire-reports
 ```
 
 ### Understanding the Test Job
 
-Let's break down what makes this job important:
-
-**1. Test Command:**
+**Test Command:**
 ```yml
 - run:
     name: Run tests
     command: |
-      echo "Running tests..."
       mvn test
 ```
-- `mvn test` runs all JUnit tests in the project
-- Maven looks for test files in `src/test/java/`
-- If any test fails, the job fails and the pipeline stops
-- **Why this is critical:** This prevents broken code from reaching production
+- Runs all JUnit tests in `src/test/java/`
+- If any test fails, job fails and pipeline stops
+- **Critical:** Prevents broken code from reaching production
 
-**2. Store Test Results:**
+**Store Test Results:**
 ```yml
 - store_test_results:
     path: target/surefire-reports
 ```
-- CircleCI collects test results and displays them in the UI
-- You can see which tests passed/failed without digging through logs
+- CircleCI parses test results and displays in UI
+- Shows which tests passed/failed
 - Maven Surefire plugin generates these reports in XML format
-- CircleCI parses these reports and shows nice summaries
 
-**3. Store Artifacts:**
+**Store Artifacts:**
 ```yml
 - store_artifacts:
     path: target/surefire-reports
 ```
 - Stores test reports as downloadable files
 - Useful for debugging test failures
-- Artifacts persist even after the job finishes
-- **Difference from test results:** Artifacts are raw files you can download; test results are parsed and displayed in UI
+- Persists even after job finishes
 
 ---
 
-### Job 3: The Publish Job
+### Job 3: The Publish Job (20 minutes)
 
 In this job, we will:
-1. Use a Docker-in-Docker image (to build Docker images)
-2. Check out code
-3. Attach the built JAR from the build job
-4. Build a Docker image
-5. Push the image to Docker Hub
+1. Use a Docker-capable image
+2. Get the JAR file from build job
+3. Build a Docker image
+4. Push the image to Docker Hub
 
 Add this job to your `config.yml`:
 
 ```yml
+  # ==========================================
+  # PUBLISH JOB - Build and push Docker image
+  # ==========================================
   publish:
+    # Use base image with Docker support
     docker:
       - image: cimg/base:stable
+    
     steps:
+      # Step 1: Download code from GitHub
       - checkout
+      
+      # Step 2: Get JAR file from build job
       - attach_workspace:
           at: .
+      
+      # Step 3: Setup Docker (required for building images)
       - setup_remote_docker:
           version: 20.10.14
+      
+      # Step 4: Build Docker image
       - run:
           name: Build Docker image
           command: |
             echo "Building Docker image..."
             docker build -t $DOCKER_USERNAME/devops-demo:latest .
+      
+      # Step 5: Login and push to Docker Hub
       - run:
           name: Push to Docker Hub
           command: |
@@ -697,50 +763,44 @@ Add this job to your `config.yml`:
 
 ### Understanding the Publish Job
 
-This job packages and publishes your application as a Docker image:
-
-**1. Base Image:**
+**Base Image:**
 ```yml
 docker:
   - image: cimg/base:stable
 ```
-- Uses a minimal base image (doesn't need Java since we're just building Docker images)
-- We'll set up Docker separately using `setup_remote_docker`
-- Keeps the job lightweight and fast
+- Minimal base image (doesn't need Java)
+- We'll set up Docker separately
 
-**2. Attach Workspace:**
+**Attach Workspace:**
 ```yml
 - attach_workspace:
     at: .
 ```
-- Retrieves the JAR file saved by the build job
+- Retrieves JAR file saved by build job
 - Puts it in `target/*.jar` so Dockerfile can copy it
-- Without this step, the JAR wouldn't exist and Docker build would fail
-- **This is why we persisted the workspace in the build job!**
+- Without this, Docker build would fail!
 
-**3. Setup Remote Docker:**
+**Setup Remote Docker:**
 ```yml
 - setup_remote_docker:
     version: 20.10.14
 ```
 - Enables Docker commands in CircleCI
-- Required to build Docker images in CircleCI's environment
-- Creates a separate Docker engine for security
-- **Without this:** You'd get "Cannot connect to Docker daemon" errors
+- Required to build Docker images
+- Creates separate Docker engine for security
 
-**4. Build Docker Image:**
+**Build Docker Image:**
 ```yml
 - run:
     name: Build Docker image
     command: |
       docker build -t $DOCKER_USERNAME/devops-demo:latest .
 ```
-- Uses your Dockerfile from Lesson 2
+- Uses your Dockerfile
 - Tags image as `USERNAME/devops-demo:latest`
-- `$DOCKER_USERNAME` is an environment variable (we'll set this in the next section)
-- The `.` means "use Dockerfile in current directory"
+- `$DOCKER_USERNAME` is environment variable (set in next section)
 
-**5. Push to Docker Hub:**
+**Push to Docker Hub:**
 ```yml
 - run:
     name: Push to Docker Hub
@@ -748,23 +808,23 @@ docker:
       echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
       docker push $DOCKER_USERNAME/devops-demo:latest
 ```
-- Logs in to Docker Hub using credentials stored as environment variables
-- `--password-stdin` reads password from standard input (more secure than command line argument)
-- Pushes the image to your Docker Hub repository
-- **Security note:** Never hardcode passwords! Always use environment variables
-- `$DOCKER_PASSWORD` is an environment variable (we'll set this in the next section)
-- Pushes the image to your Docker Hub repository
-- `$DOCKER_PASSWORD` is an environment variable (we'll set this next)
+- Logs in to Docker Hub using environment variables
+- `--password-stdin` is more secure than command line argument
+- Pushes image to Docker Hub
+- **Security:** Never hardcode passwords! Always use environment variables
 
 ---
 
-### Step 3: Define the Workflow
+### Step 3: Define the Workflow (10 minutes)
 
 Now tie all three jobs together using a workflow.
 
 Add this at the end of your `config.yml`:
 
 ```yml
+# ==========================================
+# WORKFLOW - Run jobs in sequence
+# ==========================================
 workflows:
   build_test_publish:
     jobs:
@@ -783,13 +843,13 @@ workflows:
 workflows:
   build_test_publish:    # Workflow name
     jobs:
-      - build              # Step 1: Build job runs first
-      - test:              # Step 2: Test job runs after build
+      - build              # Step 1: Build runs first
+      - test:              # Step 2: Test runs after build
           requires:
-            - build        # Only runs if build succeeds
-      - publish:           # Step 3: Publish job runs after test
+            - build        # Only if build succeeds
+      - publish:           # Step 3: Publish runs after test
           requires:
-            - test         # Only runs if test succeeds
+            - test         # Only if test succeeds
 ```
 
 **This creates a pipeline:**
@@ -797,15 +857,10 @@ workflows:
 Build → Test → Publish
 ```
 
-If any job fails, the pipeline stops. This means:
-- If build fails (compilation error), tests and publish never run
-- If tests fail (bugs in code), publish never runs  
-- Only if both build and tests succeed does the image get published
-
-**Why this order matters:**
-1. No point testing if code doesn't compile
-2. No point publishing if tests fail
-3. Only working, tested code reaches Docker Hub
+**If any job fails, pipeline stops:**
+- Build fails → Test and Publish don't run
+- Test fails → Publish doesn't run
+- Only if both succeed → Image gets published
 
 ---
 
@@ -817,6 +872,9 @@ Here's your complete `.circleci/config.yml`:
 version: 2.1
 
 jobs:
+  # ==========================================
+  # BUILD JOB - Compile and package
+  # ==========================================
   build:
     docker:
       - image: cimg/openjdk:21.0
@@ -840,6 +898,9 @@ jobs:
           paths:
             - target/*.jar
 
+  # ==========================================
+  # TEST JOB - Run automated tests
+  # ==========================================
   test:
     docker:
       - image: cimg/openjdk:21.0
@@ -859,6 +920,9 @@ jobs:
       - store_artifacts:
           path: target/surefire-reports
 
+  # ==========================================
+  # PUBLISH JOB - Build and push Docker image
+  # ==========================================
   publish:
     docker:
       - image: cimg/base:stable
@@ -881,6 +945,9 @@ jobs:
             echo "Pushing image to Docker Hub..."
             docker push $DOCKER_USERNAME/devops-demo:latest
 
+# ==========================================
+# WORKFLOW - Run jobs in sequence
+# ==========================================
 workflows:
   build_test_publish:
     jobs:
@@ -895,7 +962,7 @@ workflows:
 
 ---
 
-## Part 7 - Setting Up Docker Hub Credentials in CircleCI
+## Part 6 - Setting Up Docker Hub Credentials in CircleCI (10 minutes)
 
 The publish job needs your Docker Hub username and password.
 
@@ -911,16 +978,25 @@ The publish job needs your Docker Hub username and password.
 
 **Add these two variables:**
 
-| Name | Value |
-|------|-------|
-| `DOCKER_USERNAME` | Your Docker Hub username |
-| `DOCKER_PASSWORD` | Your Docker Hub password |
+**Variable 1:**
+- **Name:** `DOCKER_USERNAME`
+- **Value:** Your Docker Hub username (e.g., `john123`)
+- Click **Add Environment Variable**
 
-CircleCI encrypts these values for security.
+**Variable 2:**
+- **Name:** `DOCKER_PASSWORD`
+- **Value:** Your Docker Hub password
+- Click **Add Environment Variable**
+
+**Why environment variables?**
+- ✅ Secure (CircleCI encrypts them)
+- ✅ Not visible in code or logs
+- ✅ Easy to update without changing code
+- ✅ Same config works for different users
 
 ---
 
-## Part 8 - Push Config and Trigger Pipeline
+## Part 7 - Push Config and Trigger Pipeline (20 minutes)
 
 ### Step 1: Commit and Push
 
@@ -947,70 +1023,39 @@ git push origin main
 3. Click on the workflow to see job progress
 
 **You'll see:**
-- ✅ Build job (compiles code)
-- ✅ Test job (runs tests)
-- ✅ Publish job (pushes to Docker Hub)
+- ⏳ Build job (compiling...)
+- ⏳ Test job (running tests...)
+- ⏳ Publish job (pushing to Docker Hub...)
+
+**Timeline:**
+- Build: ~2-3 minutes (first time, with caching: ~1 minute)
+- Test: ~1-2 minutes
+- Publish: ~2-3 minutes
+
+**Total: ~5-8 minutes**
 
 ### Step 3: Verify on Docker Hub
 
 1. Go to [Docker Hub](https://hub.docker.com/)
-2. Check your `devops-demo` repository
-3. You should see a new push with tag `latest`
+2. Login
+3. Check your `devops-demo` repository
+4. You should see a new push with tag `latest`
 
 **Success!** Your CI pipeline is working! 🎉
 
----
+**What just happened?**
+1. You pushed code → GitHub notified CircleCI
+2. Build job: Compiled code, saved JAR
+3. Test job: Ran tests (if build succeeded)
+4. Publish job: Built Docker image, pushed to Docker Hub (if tests passed)
 
-## Part 9 - Understanding the Complete Flow
-
-Let's review what happens when you push code to GitHub:
-
-```
-1. Developer pushes code to GitHub
-   └─> git push origin main
-
-2. GitHub notifies CircleCI
-   └─> "New commit detected!"
-
-3. CircleCI starts the pipeline
-   └─> Reads .circleci/config.yml
-
-4. Build Job Runs
-   ├─> Checks out code from GitHub
-   ├─> Restores Maven cache (if available)
-   ├─> Runs: mvn clean install -DskipTests
-   ├─> Saves Maven cache for future builds
-   └─> Saves JAR file to workspace
-   
-5. Test Job Runs (if build succeeds)
-   ├─> Checks out code from GitHub
-   ├─> Restores Maven cache
-   ├─> Runs: mvn test
-   ├─> Stores test results in CircleCI UI
-   └─> Stores test reports as downloadable artifacts
-   
-6. Publish Job Runs (if test succeeds)
-   ├─> Checks out code from GitHub
-   ├─> Retrieves JAR from workspace
-   ├─> Builds Docker image using Dockerfile
-   ├─> Logs in to Docker Hub
-   └─> Pushes image to Docker Hub
-
-7. Image Available on Docker Hub
-   └─> Anyone can: docker pull YOUR_USERNAME/devops-demo:latest
-```
-
-**Key Points:**
-- Each job starts fresh in its own container
-- Jobs share data through workspaces
-- Cache speeds up repeated builds
-- Pipeline stops at first failure
+**Key takeaway:** Pipeline stops at first failure - only working, tested code reaches Docker Hub!
 
 ---
 
-## Part 10 - Testing Your CI Pipeline
+## Part 8 - Testing Your CI Pipeline (10 minutes)
 
-### Activity: Make a Change and Watch Pipeline
+### Make a Change and Watch Pipeline
 
 **Step 1:** Modify `DemoController.java`:
 
@@ -1021,7 +1066,7 @@ public String hello() {
 }
 ```
 
-**Step 2:** Update the test:
+**Step 2:** Update the test to match:
 
 ```java
 .andExpect(content().string("DevOps demo - CI/CD is working!"));
@@ -1050,35 +1095,34 @@ docker pull YOUR_USERNAME/devops-demo:latest
 docker run -p 8080:8080 YOUR_USERNAME/devops-demo:latest
 ```
 
-Open `http://localhost:8080/hello` - you should see the new message!
+Open `http://localhost:8080/hello` - you should see: "DevOps demo - CI/CD is working!"
 
 ---
 
-## Troubleshooting Common Issues (Optional)
-
-**Note to instructor:** This section can be used as reference material. Students can refer to it when they encounter issues.
+## Troubleshooting Guide
 
 ### Issue 1: Test Fails Locally
 
-**Error:** `ClassNotFoundException: org.postgresql.Driver`
+**Error:** Tests don't pass when running `mvn test`
 
 **Solution:**
 1. Check `spring-boot-starter-test` is in pom.xml
-2. Check `application-test.properties` exists
-3. Run: `mvn clean test`
+2. Verify test file is in correct package
+3. Run: `mvn clean test` to clear old builds
+4. Check test matches controller message exactly
 
 ---
 
 ### Issue 2: Docker Login Failed in CircleCI
 
-**Error:** `Error response from daemon: Get https://registry-1.docker.io/v2/: unauthorized`
+**Error:** `unauthorized: incorrect username or password`
 
 **Solution:**
 1. Go to CircleCI → Project Settings → Environment Variables
 2. Verify `DOCKER_USERNAME` and `DOCKER_PASSWORD` are correct
-3. Make sure there are no extra spaces in values
+3. Make sure there are no extra spaces
 4. Delete and re-add `DOCKER_PASSWORD` if needed
-5. Retrigger pipeline (push a new commit)
+5. Push a new commit to retrigger pipeline
 
 ---
 
@@ -1086,21 +1130,17 @@ Open `http://localhost:8080/hello` - you should see the new message!
 
 **Error:** `COPY failed: file not found in build context`
 
-**Cause:**
-- Build job didn't persist the JAR
-- Or publish job didn't attach workspace
-- Or .dockerignore is blocking target/*.jar
+**Cause:** Build job didn't persist JAR, or publish job didn't attach workspace
 
 **Solution:**
-1. Check `.dockerignore` allows `target/*.jar`
-2. Verify build job has:
+1. Verify build job has:
 ```yml
 - persist_to_workspace:
     root: .
     paths:
       - target/*.jar
 ```
-3. Verify publish job has:
+2. Verify publish job has:
 ```yml
 - attach_workspace:
     at: .
@@ -1110,13 +1150,12 @@ Open `http://localhost:8080/hello` - you should see the new message!
 
 ### Issue 4: "Cannot connect to Docker daemon"
 
-**Error:** `Cannot connect to the Docker daemon at unix:///var/run/docker.sock`
+**Error:** `Cannot connect to the Docker daemon`
 
-**Cause:**
-Missing `setup_remote_docker` step in publish job.
+**Cause:** Missing `setup_remote_docker` step
 
 **Solution:**
-Verify your publish job has:
+Verify publish job has:
 ```yml
 - setup_remote_docker:
     version: 20.10.14
@@ -1126,111 +1165,70 @@ Verify your publish job has:
 
 ### Issue 5: Pipeline doesn't trigger automatically
 
-**Symptom:**
-Pushing to GitHub doesn't start the pipeline.
+**Symptom:** Pushing to GitHub doesn't start pipeline
 
 **Solution:**
 1. Go to CircleCI → Project Settings → Advanced
-2. Check "Enable GitHub Checks" is enabled
+2. Check "Only build pull requests" is disabled
 3. Go to GitHub → Repository → Settings → Webhooks
-4. Verify CircleCI webhook exists and shows recent deliveries
-5. Try pushing a new commit to trigger the pipeline
-
----
-
-## Activity - Group Discussion (10 minutes)
-
-**Instructor:** Lead a brief discussion with these questions:
-
-1. **Why do we have separate build and test jobs?**
-   - Hint: What happens if the build fails vs if tests fail?
-   - Answer: Helps us identify if it's a compilation error (build) or a logic error (test)
-
-2. **What is the purpose of caching Maven dependencies?**
-   - Hint: How long would builds take without caching?
-   - Answer: Dramatically speeds up builds (5-10x faster) by not re-downloading dependencies
-
-3. **Why do we use environment variables for Docker credentials?**
-   - Hint: What would happen if we hardcoded the password in config.yml?
-   - Answer: Security! Passwords in code can be leaked. Environment variables are encrypted.
-
-4. **What happens if the publish job fails?**
-   - Hint: Does the old image stay on Docker Hub?
-   - Answer: Yes, old image remains. No broken images reach Docker Hub.
-
----
-
-## Best Practices for CI Pipelines (Self Study)
-
-### 1. Keep Tests Fast
-- Fast tests = faster feedback to developers
-- Aim for test job to complete in under 2 minutes
-- Use unit tests in CI; save integration tests for CD pipeline
-- Slow tests discourage frequent commits
-
-### 2. Use Caching Wisely
-- Cache Maven dependencies to speed up builds
-- Cache Docker layers when possible
-- Can reduce build time from 10 minutes to 2 minutes
-- Cache invalidates when pom.xml changes
-
-### 3. Fail Fast
-- Run tests early in the pipeline
-- Don't waste time building Docker images if tests fail
-- Faster feedback = happier developers
-
-### 4. Use Environment Variables for Secrets
-- Never hardcode credentials in config files
-- Environment variables are encrypted by CircleCI
-- Makes config reusable across projects
-- Passwords in Git history are permanent security risks
-
-### 5. Monitor Your Pipelines
-- Set up notifications (email, Slack) for build failures
-- Review failed builds promptly
-- Keep pipeline "green" (passing)
-- A red pipeline becomes invisible - developers ignore it
-
-### 6. Version Your Docker Images
-- Don't rely only on `latest` tag
-- Use commit SHA or version numbers
-- Enables rollback to specific versions
-- Better traceability in production
+4. Verify CircleCI webhook exists
+5. Try pushing a new commit
 
 ---
 
 ## Summary
 
-You have successfully:
-- ✅ Created automated CI pipeline with CircleCI
-- ✅ Configured build, test, and publish jobs
-- ✅ Added automated JUnit tests to Spring Boot application
-- ✅ Set up automatic Docker image publishing to Docker Hub
-- ✅ Tested the complete workflow from code commit to Docker Hub
+### What You Accomplished Today
 
-**Key Takeaway:** Every code push now automatically builds, tests, and publishes your application - this is Continuous Integration in action!
+1. ✅ Created automated CI pipeline with CircleCI
+2. ✅ Configured build, test, and publish jobs
+3. ✅ Added automated JUnit tests to Spring Boot application
+4. ✅ Set up automatic Docker image publishing to Docker Hub
+5. ✅ Tested the complete workflow from code commit to Docker Hub
+
+### Key Takeaways
+
+**1. CI Automates Everything:**
+- Every code push triggers build, test, publish
+- No manual steps
+- Fast feedback (5-8 minutes)
+
+**2. Tests Prevent Broken Code:**
+- Tests must pass before publishing
+- Broken code never reaches Docker Hub
+- Catch bugs immediately
+
+**3. Caching Speeds Up Builds:**
+- Maven dependencies cached
+- First build: 8 minutes
+- Subsequent builds: 3-4 minutes
+
+**4. Environment Variables = Security:**
+- Never hardcode passwords
+- CircleCI encrypts secrets
+- Easy to update credentials
 
 ---
 
-## Assignment
+## Additional Resources
 
-Modify your CI pipeline to tag Docker images with commit SHA.
+### CI/CD Concepts
+- [Martin Fowler on Continuous Integration](https://martinfowler.com/articles/continuousIntegration.html)
+- [What is CI/CD?](https://www.redhat.com/en/topics/devops/what-is-ci-cd)
 
-**Task:** Update the publish job to use `$CIRCLE_SHA1` instead of just `latest`.
+### CircleCI Documentation
+- [CircleCI Docs](https://circleci.com/docs/)
+- [Java/Maven Guide](https://circleci.com/docs/language-java-maven/)
+- [CircleCI Orbs](https://circleci.com/developer/orbs)
 
-**Hint:** Replace this line:
-```bash
-docker build -t $DOCKER_USERNAME/devops-demo:latest .
-```
-
-With:
-```bash
-docker build -t $DOCKER_USERNAME/devops-demo:$CIRCLE_SHA1 .
-docker push $DOCKER_USERNAME/devops-demo:$CIRCLE_SHA1
-```
-
-**Test:** Push your changes and check Docker Hub for the new tag (will be a long SHA like `abc123def456...`).
+### Video Tutorials
+- [CircleCI Tutorial for Beginners](https://www.youtube.com/results?search_query=circleci+tutorial)
+- [CI/CD Explained](https://www.youtube.com/watch?v=scEDHsr3APg)
 
 ---
 
-END
+**End of Lesson 4.7**
+
+**Congratulations!** You've successfully set up a complete CI pipeline. Every code push now automatically builds, tests, and publishes your application. This is the foundation of modern DevOps practices! 🎉
+
+**Next Lesson:** Lesson 4.8 - Saturday Coaching (Apply Docker to simple-crm-lite)
