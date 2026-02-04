@@ -782,8 +782,8 @@ docker:
 
 **Setup Remote Docker:**
 ```yml
-- setup_remote_docker:
-    version: 20.10.14
+- setup_remote_docker
+    
 ```
 - Enables Docker commands in CircleCI
 - Required to build Docker images
@@ -930,8 +930,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - setup_remote_docker:
-          version: 20.10.14
+      - setup_remote_docker
       - run:
           name: Build Docker image
           command: |
