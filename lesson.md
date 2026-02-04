@@ -18,10 +18,11 @@ Before starting this lesson, ensure you have:
 - Java 21 (already installed)
 - Maven (already installed)
 - Docker (already installed)
-- [CircleCI Account](https://circleci.com/) - Create one using GitHub
-- [Docker Hub Account](https://hub.docker.com) - Already created in Lesson 4.3
 - GitHub account
+- [Docker Hub Account](https://hub.docker.com) - Already created in Lesson 4.5
 - Your **devops-demo** Spring Boot project from previous lessons
+
+**Note:** You will create a CircleCI account during this lesson using your GitHub account.
 
 ---
 
@@ -131,12 +132,54 @@ To achieve Continuous Integration, a **CI Pipeline** is created containing jobs 
 
 ## Part 2 - Preparing Your DevOps Demo Project for CI (20 minutes)
 
-Before setting up CircleCI, we need to prepare your Spring Boot project with tests and verify all dependencies.
+Before setting up CircleCI, we need to simplify your project from the Docker Compose lesson and prepare it for CI/CD.
 
-### Step 1: Verify Your pom.xml
+### Step 1: Clean Up Docker Compose Files
 
-Open your `pom.xml` file and check you have these dependencies:
+In Lesson 4.6, you added PostgreSQL database support. For CI/CD, we'll simplify the project to focus on the core application without database complexity.
 
+**Why simplify?**
+- Faster CI builds (fewer dependencies to download)
+- Simpler testing (no database setup needed in CI)
+- Clearer focus on CI/CD concepts
+- Database will be added back in later lessons when needed
+
+**Remove docker-compose.yml:**
+```bash
+# Delete the docker-compose.yml file
+rm docker-compose.yml
+```
+
+**Remove any Entity classes:**
+
+If you created any entity classes (like `User.java`, `Customer.java` in `src/main/java/.../entity/` or `model/`), delete them:
+```bash
+# Example - adjust path to your actual entity files
+rm -rf src/main/java/com/example/devopsdemo/entity/
+# OR
+rm -rf src/main/java/com/example/devopsdemo/model/
+```
+
+### Step 2: Simplify pom.xml
+
+Open your `pom.xml` and **remove** these database-related dependencies if present:
+
+**Remove these:**
+```xml
+<!-- REMOVE THESE DATABASE DEPENDENCIES -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-jpa</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.postgresql</groupId>
+    <artifactId>postgresql</artifactId>
+    <scope>runtime</scope>
+</dependency>
+```
+
+**Your simplified pom.xml should look like this:**
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -193,13 +236,41 @@ Open your `pom.xml` file and check you have these dependencies:
 - ✅ Java 21
 - ✅ spring-boot-starter-web (for REST endpoints)
 - ✅ spring-boot-starter-test (for JUnit tests)
+- ❌ NO database dependencies
 
 **That's it!** Simple app, simple dependencies.
 
-### Step 2: Verify Your DemoController
+### Step 3: Clean application.properties
 
-Make sure you have `src/main/java/com/example/devopsdemo/controller/DemoController.java`:
+Open `src/main/resources/application.properties` and **remove** all database configuration:
 
+**Remove these lines if present:**
+```properties
+# REMOVE THESE DATABASE CONFIGURATIONS
+spring.datasource.url=jdbc:postgresql://localhost:5432/devopsdemodb
+spring.datasource.username=devopsdemouser
+spring.datasource.password=devopsdemopass
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+```
+
+**Your application.properties should be empty or have only basic settings:**
+```properties
+# Application name
+spring.application.name=devops-demo
+
+# Server port (optional - default is 8080)
+server.port=8080
+```
+
+Or simply leave it empty - Spring Boot will use defaults.
+
+### Step 4: Verify Your DemoController
+
+Make sure you have a simple controller without database dependencies.
+
+Open `src/main/java/com/example/devopsdemo/controller/DemoController.java`:
 ```java
 package com.example.devopsdemo.controller;
 
@@ -223,9 +294,26 @@ public class DemoController {
 }
 ```
 
-**Simple app with one endpoint: `/hello`**
+**Simple app with one endpoint: `/hello` - no database, no entities, just a REST endpoint.**
 
-### Step 3: Add a Test for Your Controller
+### Step 5: Test the Simplified Application
+
+Verify everything works after cleanup:
+```bash
+# Clean and rebuild
+mvn clean package
+
+# Run the application
+java -jar target/devops-demo-0.0.1-SNAPSHOT.jar
+```
+
+**Test in browser:** `http://localhost:8080/hello`
+
+**Expected:** "DevOps demo application is running!"
+
+**If it works, cleanup is complete!** ✅
+
+## Part 3: Add a Test for Your Controller
 
 Create this directory structure if it doesn't exist:
 ```
@@ -327,7 +415,7 @@ mvn test
 
 ### Step 5: Verify Your Dockerfile
 
-Make sure you have a `Dockerfile` in your project root from Lesson 4.2:
+Make sure you have a `Dockerfile` in your project root from Lesson 4.4:
 
 ```bash
 ls -la Dockerfile
@@ -356,17 +444,39 @@ CMD ["java", "-jar", "app.jar"]
 
 CircleCI needs your code in a GitHub repository to run CI pipelines.
 
+### Important: Use Your Personal GitHub Account
+
+**For this lesson and all subsequent DevOps lessons (4.7-4.14), create the devops-demo repository under your PERSONAL GitHub account.**
+
+**Why?**
+- This repository will be used throughout the entire DevOps module
+- Personal accounts have simpler setup with CircleCI, Render, and other DevOps tools
+- No organization permission issues
+- Full control over repository settings
+- Easier integration with external services
+
+**Example:**
+- ✅ **Correct:** `https://github.com/YOUR_USERNAME/devops-demo`
+- ❌ **Avoid:** `https://github.com/ORGANIZATION_NAME/devops-demo`
+
+**Note:** Once you set up this repo in your personal account for this lesson, you'll continue using it for CI/CD, deployment, and DevSecOps lessons throughout Module 4.
+
+---
+
 ### Step 1: Create a New GitHub Repository
 
-1. Go to [GitHub](https://github.com) and sign in
+1. Go to [GitHub](https://github.com) and sign in to your **personal account**
 2. Click the **+** icon in the top-right corner
 3. Click **New repository**
 4. Fill in details:
+   - **Owner:** Make sure your **personal username** is selected (not an organization)
    - **Repository name:** `devops-demo`
    - **Description:** "DevOps demo Spring Boot application for CI/CD"
    - **Public** (CircleCI free tier works best with public repos)
    - **Do NOT** initialize with README, .gitignore, or license
 5. Click **Create repository**
+
+**Verify:** The repository URL should be `https://github.com/YOUR_USERNAME/devops-demo` (not an organization name).
 
 ### Step 2: Initialize Git in Your Project
 
@@ -432,38 +542,9 @@ After running these commands, refresh your GitHub repository page. You should se
 
 ---
 
-## Part 4 - CircleCI Setup (15 minutes)
+## Part 4 - Building the CI Pipeline Configuration (50 minutes)
 
-### What is CircleCI?
-
-CircleCI is a cloud-based CI/CD platform that automates your build, test, and deployment processes. It integrates seamlessly with GitHub and runs your pipeline whenever you push code.
-
-**Why CircleCI?**
-- ✅ Easy setup (connects to GitHub in minutes)
-- ✅ Free tier for learning
-- ✅ Cloud-based (no server to maintain)
-- ✅ Fast builds with parallelization
-- ✅ Great documentation
-
-### Create CircleCI Account
-
-**Step 1:** Go to [circleci.com](https://circleci.com/)
-
-**Step 2:** Click **Sign Up** and choose **Sign up with GitHub**
-
-**Step 3:** Authorize CircleCI to access your GitHub account
-
-**Step 4:** After signing in, you'll see your GitHub repositories
-
-**Step 5:** Find your `devops-demo` repository and click **Set Up Project**
-
-**Step 6:** CircleCI will ask if you want to use an existing config file or create a new one
-
-**Step 7:** Select **"Use Existing Config"** (we'll create the config file next)
-
----
-
-## Part 5 - Building the CI Pipeline (50 minutes)
+Before connecting to CircleCI, we need to create the pipeline configuration file. This file tells CircleCI what to do when code is pushed.
 
 We will create three jobs for our CI pipeline:
 1. **Build** - Compile and package the application
@@ -517,7 +598,7 @@ This specifies the CircleCI configuration version (2.1 is the latest).
 
 ---
 
-### Job 1: The Build Job (20 minutes)
+### Job 1: The Build Job (15 minutes)
 
 In this job, we will:
 1. Use a Java 21 Docker image
@@ -634,7 +715,7 @@ docker:
 
 ---
 
-### Job 2: The Test Job (20 minutes)
+### Job 2: The Test Job (15 minutes)
 
 In this job, we will:
 1. Use the same Java 21 Docker image
@@ -713,7 +794,7 @@ Add this job to your `config.yml`:
 
 ---
 
-### Job 3: The Publish Job (20 minutes)
+### Job 3: The Publish Job (15 minutes)
 
 In this job, we will:
 1. Use a Docker-capable image
@@ -741,8 +822,7 @@ Add this job to your `config.yml`:
           at: .
       
       # Step 3: Setup Docker (required for building images)
-      - setup_remote_docker:
-          version: 20.10.14
+      - setup_remote_docker
       
       # Step 4: Build Docker image
       - run:
@@ -783,11 +863,11 @@ docker:
 **Setup Remote Docker:**
 ```yml
 - setup_remote_docker
-    
 ```
 - Enables Docker commands in CircleCI
 - Required to build Docker images
 - Creates separate Docker engine for security
+- **Important:** Do NOT specify a version number - CircleCI will use the latest compatible version
 
 **Build Docker Image:**
 ```yml
@@ -798,7 +878,7 @@ docker:
 ```
 - Uses your Dockerfile
 - Tags image as `USERNAME/devops-demo:latest`
-- `$DOCKER_USERNAME` is environment variable (set in next section)
+- `$DOCKER_USERNAME` is environment variable (set later in CircleCI dashboard)
 
 **Push to Docker Hub:**
 ```yml
@@ -815,7 +895,7 @@ docker:
 
 ---
 
-### Step 3: Define the Workflow (10 minutes)
+### Step 3: Define the Workflow (5 minutes)
 
 Now tie all three jobs together using a workflow.
 
@@ -961,19 +1041,81 @@ workflows:
 
 ---
 
-## Part 6 - Setting Up Docker Hub Credentials in CircleCI (10 minutes)
+## Part 5 - Push Configuration to GitHub (10 minutes)
 
-The publish job needs your Docker Hub username and password.
+Now that the CircleCI configuration is ready, push it to GitHub so CircleCI can detect it.
+
+### Commit and Push
+
+In your terminal:
+
+```bash
+# Check status
+git status
+
+# Add the CircleCI config
+git add .circleci/config.yml
+
+# Commit
+git commit -m "Add CircleCI configuration"
+
+# Push to GitHub
+git push origin main
+```
+
+**Your repository now has everything CircleCI needs to run your pipeline!**
+
+---
+
+## Part 6 - Setting Up CircleCI (15 minutes)
+
+Now that your code and configuration are on GitHub, connect CircleCI to your repository.
+
+### What is CircleCI?
+
+CircleCI is a cloud-based CI/CD platform that automates your build, test, and deployment processes. It integrates seamlessly with GitHub and runs your pipeline whenever you push code.
+
+**Why CircleCI?**
+- ✅ Easy setup (connects to GitHub in minutes)
+- ✅ Free tier for learning
+- ✅ Cloud-based (no server to maintain)
+- ✅ Fast builds with parallelization
+- ✅ Great documentation
+
+### Create CircleCI Account and Connect Repository
+
+**Step 1:** Go to [circleci.com](https://circleci.com/)
+
+**Step 2:** Click **Sign Up** and choose **Sign up with GitHub**
+
+**Step 3:** Authorize CircleCI to access your GitHub account
+
+**Step 4:** After signing in, you'll see your GitHub repositories
+
+**Step 5:** Find your `devops-demo` repository in the list
+
+**Step 6:** Click **Set Up Project** next to `devops-demo`
+
+**Step 7:** CircleCI will automatically detect your `.circleci/config.yml` file
+
+**Step 8:** Click **Start Building** or **Let's Go**
+
+**CircleCI will now start your first pipeline run!** However, it will fail at the publish job because we haven't added Docker Hub credentials yet. That's expected - we'll fix it in the next part.
+
+---
+
+## Part 7 - Setting Up Docker Hub Credentials in CircleCI (10 minutes)
+
+The publish job needs your Docker Hub username and password to push images.
 
 **Important:** Never hardcode passwords! Use environment variables.
 
 ### Add Environment Variables
 
-1. Go to [CircleCI Dashboard](https://app.circleci.com/)
-2. Click on your **devops-demo** project
-3. Click **Project Settings** (top-right)
-4. Click **Environment Variables** (left menu)
-5. Click **Add Environment Variable**
+1. In CircleCI, make sure you're viewing your **devops-demo** project
+2. Click **Project Settings** (gear icon, top-right)
+3. Click **Environment Variables** (left menu)
+4. Click **Add Environment Variable**
 
 **Add these two variables:**
 
@@ -995,31 +1137,32 @@ The publish job needs your Docker Hub username and password.
 
 ---
 
-## Part 7 - Push Config and Trigger Pipeline (20 minutes)
+## Part 8 - Watch Your Pipeline Run (10 minutes)
 
-### Step 1: Commit and Push
+### Trigger a New Build
 
-In your terminal:
+After adding environment variables, trigger the pipeline again:
+
+**Option 1:** Push a small change
 
 ```bash
-# Check status
-git status
-
-# Add all files
-git add .
-
-# Commit
-git commit -m "Add CircleCI configuration"
-
-# Push to GitHub
+# Make a small change to trigger the pipeline
+echo "# DevOps Demo" > README.md
+git add README.md
+git commit -m "Add README"
 git push origin main
 ```
 
-### Step 2: Watch the Pipeline
+**Option 2:** Re-run from CircleCI dashboard
+
+1. Go to your CircleCI dashboard
+2. Find the failed pipeline
+3. Click **Rerun workflow from beginning**
+
+### Watch the Pipeline
 
 1. Go to [CircleCI Dashboard](https://app.circleci.com/)
-2. Your pipeline should start automatically!
-3. Click on the workflow to see job progress
+2. Click on your workflow to see job progress
 
 **You'll see:**
 - ⏳ Build job (compiling...)
@@ -1033,7 +1176,15 @@ git push origin main
 
 **Total: ~5-8 minutes**
 
-### Step 3: Verify on Docker Hub
+### Verify Success
+
+**All three jobs should show green checkmarks!** ✅
+
+1. Build ✓
+2. Test ✓
+3. Publish ✓
+
+### Verify on Docker Hub
 
 1. Go to [Docker Hub](https://hub.docker.com/)
 2. Login
@@ -1052,7 +1203,7 @@ git push origin main
 
 ---
 
-## Part 8 - Testing Your CI Pipeline (10 minutes)
+## Part 9 - Testing Your CI Pipeline (10 minutes)
 
 ### Make a Change and Watch Pipeline
 
@@ -1085,7 +1236,7 @@ git commit -m "Update hello message"
 git push origin main
 ```
 
-**Step 5:** Watch CircleCI run the pipeline again!
+**Step 5:** Watch CircleCI run the pipeline again automatically!
 
 **Step 6:** Pull and test the new image:
 
@@ -1100,7 +1251,76 @@ Open `http://localhost:8080/hello` - you should see: "DevOps demo - CI/CD is wor
 
 ## Troubleshooting Guide
 
-### Issue 1: Test Fails Locally
+### Issue 1: CircleCI with Organization Repositories
+
+**If you created your devops-demo repository in an organization account and CircleCI is not working, you have two options:**
+
+---
+
+#### **Option 1: Move Repository to Personal Account (Recommended)**
+
+**Step 1: Create New Repository**
+1. Go to your personal GitHub account
+2. Create a new repository: `devops-demo`
+3. Copy the repository URL: `https://github.com/YOUR_USERNAME/devops-demo.git`
+
+**Step 2: Update Remote in Your Local Project**
+
+Open terminal in your devops-demo project:
+
+```bash
+# Remove old organization remote
+git remote remove origin
+
+# Add new personal remote
+git remote add origin https://github.com/YOUR_USERNAME/devops-demo.git
+
+# Push to personal repo
+git push -u origin main
+```
+
+**Step 3: Connect to CircleCI**
+1. Go to CircleCI.com
+2. Click "Projects"
+3. Find your personal `YOUR_USERNAME/devops-demo`
+4. Click "Set Up Project"
+5. Click "Start Building"
+
+---
+
+#### **Option 2: Get Organization Admin Access (Advanced)**
+
+**If you must use the organization repository:**
+
+**Step 1: Contact Organization Admin**
+- Ask the organization owner/admin to grant you admin access
+- Or ask them to install CircleCI for the organization
+
+**Step 2: Install CircleCI for Organization**
+1. Organization admin goes to: `https://github.com/organizations/ORG_NAME/settings/installations`
+2. Click "Configure" next to CircleCI
+3. Grant access to the `devops-demo` repository
+4. Save changes
+
+**Step 3: Try Connecting Again**
+- Go to CircleCI and try to add the project again
+
+---
+
+**Common Error Messages:**
+
+**"Permission denied" or "Repository not found"**
+→ CircleCI doesn't have access to the organization. Use Option 1 or contact admin.
+
+**"Failed to fetch repository"**
+→ Use your personal account instead (Option 1).
+
+**Pipeline shows "No config found"**
+→ This is a different issue - ensure `.circleci/config.yml` exists in your repository.
+
+---
+
+### Issue 2: Test Fails Locally
 
 **Error:** Tests don't pass when running `mvn test`
 
@@ -1112,7 +1332,7 @@ Open `http://localhost:8080/hello` - you should see: "DevOps demo - CI/CD is wor
 
 ---
 
-### Issue 2: Docker Login Failed in CircleCI
+### Issue 3: Docker Login Failed in CircleCI
 
 **Error:** `unauthorized: incorrect username or password`
 
@@ -1121,11 +1341,11 @@ Open `http://localhost:8080/hello` - you should see: "DevOps demo - CI/CD is wor
 2. Verify `DOCKER_USERNAME` and `DOCKER_PASSWORD` are correct
 3. Make sure there are no extra spaces
 4. Delete and re-add `DOCKER_PASSWORD` if needed
-5. Push a new commit to retrigger pipeline
+5. Trigger a new build
 
 ---
 
-### Issue 3: JAR File Not Found in Docker Build
+### Issue 4: JAR File Not Found in Docker Build
 
 **Error:** `COPY failed: file not found in build context`
 
@@ -1147,7 +1367,7 @@ Open `http://localhost:8080/hello` - you should see: "DevOps demo - CI/CD is wor
 
 ---
 
-### Issue 4: "Cannot connect to Docker daemon"
+### Issue 5: "Cannot connect to Docker daemon"
 
 **Error:** `Cannot connect to the Docker daemon`
 
@@ -1156,13 +1376,14 @@ Open `http://localhost:8080/hello` - you should see: "DevOps demo - CI/CD is wor
 **Solution:**
 Verify publish job has:
 ```yml
-- setup_remote_docker:
-    version: 20.10.14
+- setup_remote_docker
 ```
+
+**Note:** Do NOT specify a version number. Let CircleCI use the latest compatible version.
 
 ---
 
-### Issue 5: Pipeline doesn't trigger automatically
+### Issue 6: Pipeline doesn't trigger automatically
 
 **Symptom:** Pushing to GitHub doesn't start pipeline
 
@@ -1184,6 +1405,7 @@ Verify publish job has:
 3. ✅ Added automated JUnit tests to Spring Boot application
 4. ✅ Set up automatic Docker image publishing to Docker Hub
 5. ✅ Tested the complete workflow from code commit to Docker Hub
+6. ✅ Learned to use personal GitHub account for easier DevOps tool integration
 
 ### Key Takeaways
 
@@ -1207,6 +1429,11 @@ Verify publish job has:
 - CircleCI encrypts secrets
 - Easy to update credentials
 
+**5. Personal Accounts Simplify Setup:**
+- Use personal GitHub account for DevOps projects
+- Easier integration with CircleCI and other tools
+- No permission barriers
+
 ---
 
 ## Additional Resources
@@ -1226,8 +1453,3 @@ Verify publish job has:
 
 ---
 
-**End of Lesson 4.7**
-
-**Congratulations!** You've successfully set up a complete CI pipeline. Every code push now automatically builds, tests, and publishes your application. This is the foundation of modern DevOps practices! 🎉
-
-**Next Lesson:** Lesson 4.8 - Saturday Coaching (Apply Docker to simple-crm-lite)
