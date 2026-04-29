@@ -202,7 +202,7 @@ Open your `pom.xml` and **remove** these database-related dependencies if presen
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.11</version>
+        <version>3.2.0</version>
         <relativePath/>
     </parent>
     
@@ -243,7 +243,7 @@ Open your `pom.xml` and **remove** these database-related dependencies if presen
 ```
 
 **Key points:**
-- ✅ Spring Boot 3.5.11
+- ✅ Spring Boot 3.2.0
 - ✅ Java 21
 - ✅ spring-boot-starter-web (for REST endpoints)
 - ✅ spring-boot-starter-test (for JUnit tests)
