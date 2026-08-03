@@ -58,13 +58,17 @@ In the past, developers on a team might work in isolation for an extended period
 
 ### The Benefits of Continuous Integration
 
-**1. Improved Code Quality** - Catch errors early, automated tests run on every commit, fewer bugs reach production
+**1. Small Changes** - Frequent, small commits are easier to debug and review than large, infrequent ones
 
-**2. Faster Feedback** - Know within minutes if your code broke something, don't wait days to discover issues
+**2. Improved Code Quality** - Catch errors early, automated tests run on every commit, fewer bugs reach production
 
-**3. Faster Time to Market** - Deploy multiple times per day instead of monthly, competitive advantage
+**3. Faster Feedback** - Know within minutes if your code broke something, don't wait days to discover issues
 
 **4. Improved Collaboration** - Shared responsibility for code quality, everyone sees build status
+
+**5. Always Deployable** - Working code is ready at all times, not just at the end of a release cycle
+
+**6. Faster Time to Market** - Deploy multiple times per day instead of monthly, competitive advantage
 
 ### How Does Continuous Integration Work?
 
@@ -136,7 +140,7 @@ Think about a team of developers working on the same codebase without Continuous
 
 1. Developer A works on a feature for 2 weeks without merging. Developer B does the same. What problems could occur when they both try to merge on the same day?
 2. How does running automated tests on every commit protect the team from breaking production?
-3. From the four benefits listed above — Improved Code Quality, Faster Feedback, Faster Time to Market, Improved Collaboration — which do you think is most valuable and why?
+3. From the six benefits listed above — Small Changes, Improved Code Quality, Faster Feedback, Improved Collaboration, Always Deployable, Faster Time to Market — which do you think is most valuable and why?
 
 > **Tip:** Think about what happens in a real software company when a bug reaches production on a Friday evening.
 
@@ -1082,6 +1086,8 @@ The publish job needs your Docker Hub username and password to push images.
 - **Value:** Your Docker Hub password
 - Click **Add Environment Variable**
 
+> **Note — If you have 2FA enabled on Docker Hub:** Your regular password will NOT work for `docker login` if two-factor authentication is turned on for your Docker Hub account — it will fail with an `unauthorized` error even with the correct password. In that case, generate a **Docker Hub Access Token** instead (Docker Hub → Account Settings → Security → **New Access Token**), and use that token as the value for `DOCKER_PASSWORD` above. Everything else in this lesson stays exactly the same either way.
+
 **Why environment variables?**
 - ✅ Secure (CircleCI encrypts them)
 - ✅ Not visible in code or logs
@@ -1245,8 +1251,9 @@ Contact the organization owner/admin to grant CircleCI access to the repository 
 1. Go to CircleCI → Project Settings → Environment Variables
 2. Verify `DOCKER_USERNAME` and `DOCKER_PASSWORD` are correct
 3. Make sure there are no extra spaces
-4. Delete and re-add `DOCKER_PASSWORD` if needed
-5. Trigger a new build
+4. If your Docker Hub account has 2FA enabled, use a Docker Hub **Access Token** instead of your password (see Part 8)
+5. Delete and re-add `DOCKER_PASSWORD` if needed
+6. Trigger a new build
 
 ---
 
