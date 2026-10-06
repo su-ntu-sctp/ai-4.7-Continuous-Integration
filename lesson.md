@@ -160,8 +160,16 @@ unzip v4.7.0.zip
 cd v4.7.0
 ```
 
+Verify that everything is working properly.
+
+```sh
+mvn spring-boot:run
+```
+
+Check that `http://localhost:8080/hello` shows this message, "DevOps demo application is running!"
+
 <details>
-   <summary>Instructions if you did not download the ZIP project file</summary>
+   <summary>Only follow these instructions if you did not download the ZIP project file.</summary>
    ⚠️ It is highly recommended that you use the ZIP project file. You may safely ignore these instructions if you have downloaded the ZIP project file. However, if you did not manage to download the project, you may follow these instructions to setup your project.
 
 Before setting up CircleCI, we need to simplify your project from the Docker Compose lesson and prepare it for CI/CD.
