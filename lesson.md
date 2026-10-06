@@ -148,6 +148,22 @@ Think about a team of developers working on the same codebase without Continuous
 
 ## Part 2 - Preparing Your DevOps Demo Project for CI
 
+Download the project file for this lesson. 
+
+For Windows users, use the WSL terminal only. For macOS users, use your preferred terminal. Run the following commands to setup your project.
+
+```sh
+cd ~
+cd playground
+curl -L -O https://github.com/aie-devops/devops-demo/archive/refs/tags/v4.7.0.zip
+unzip v4.7.0.zip
+cd v4.7.0
+```
+
+<details>
+   <summary>Instructions if you did not download the ZIP project file</summary>
+   ⚠️ It is highly recommended that you use the ZIP project file. You may safely ignore these instructions if you have downloaded the ZIP project file. However, if you did not manage to download the project, you may follow these instructions to setup your project.
+
 Before setting up CircleCI, we need to simplify your project from the Docker Compose lesson and prepare it for CI/CD.
 
 ### Step 1: Clean Up Docker Compose Files
@@ -323,6 +339,8 @@ java -jar target/devops-demo-0.0.1-SNAPSHOT.jar
 **Expected:** "DevOps demo application is running!"
 
 **If it works, cleanup is complete!** ✅
+
+</details>
 
 ---
 
