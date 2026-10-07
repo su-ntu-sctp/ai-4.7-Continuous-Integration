@@ -814,7 +814,7 @@ Add this job to your `config.yml`:
           name: Push to Docker Hub
           command: |
             echo "Logging in to Docker Hub..."
-            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+            echo $DOCKER_TOKEN | docker login -u $DOCKER_USERNAME --password-stdin
             echo "Pushing image to Docker Hub..."
             docker push $DOCKER_USERNAME/devops-demo:latest
 ```
@@ -862,12 +862,12 @@ docker:
 - run:
     name: Push to Docker Hub
     command: |
-      echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+      echo $DOCKER_TOKEN | docker login -u $DOCKER_USERNAME --password-stdin
       docker push $DOCKER_USERNAME/devops-demo:latest
 ```
 - Logs in to Docker Hub using environment variables
 - `--password-stdin` is more secure than a command line argument
-- **Security:** Never hardcode passwords! Always use environment variables
+- **Security:** Never hardcode passwords or personal access tokens! Always use environment variables
 
 ---
 
@@ -1023,7 +1023,7 @@ Without running anything yet, read through the complete `config.yml` above and a
 1. What Docker image does the build job use, and why is it different from the publish job's image?
 2. What is the purpose of `persist_to_workspace` in the build job and `attach_workspace` in the publish job?
 3. What happens if the test job fails — does the publish job still run?
-4. Why is `$DOCKER_PASSWORD` used instead of typing the actual password directly in the config file?
+4. Why is `$DOCKER_TOKEN` used instead of typing the actual password directly in the config file?
 
 > Discuss your answers with a partner before moving on.
 
@@ -1092,9 +1092,23 @@ CircleCI is a cloud-based CI/CD platform that automates your build, test, and de
 
 The publish job needs your Docker Hub username and personal access token to push images.
 
-**Important:** Never hardcode passwords! Use environment variables.
+**Important:** Never hardcode passwords or personal access tokens! Use environment variables.
 
-### Add Environment Variables
+### Create Personal Access Token in Docker Hub
+
+![screenshot](./assets/images/create-access-token.png)
+
+1. Login to Docker Hub
+2. Head over to your account settings
+3. Click on Personal Access Token
+4. Generate new token
+5. Description: `circleci-devops-demo`
+6. Expiration date: `90 days`
+7. Access permissions: `Repo Read & Write`
+
+![screenshot](./assets/images/copy-access-token.png)
+
+### Add Environment Variables in CircleCI
 
 1. In CircleCI, make sure you're viewing your **devops-demo** project
 2. Click **Organization Settings**
