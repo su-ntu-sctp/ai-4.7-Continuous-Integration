@@ -994,7 +994,7 @@ jobs:
           name: Push to Docker Hub
           command: |
             echo "Logging in to Docker Hub..."
-            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+            echo $DOCKER_TOKEN | docker login -u $DOCKER_USERNAME --password-stdin
             echo "Pushing image to Docker Hub..."
             docker push $DOCKER_USERNAME/devops-demo:latest
 
@@ -1009,6 +1009,7 @@ workflows:
           requires:
             - build
       - publish:
+          context: docker-hub
           requires:
             - test
 ```
@@ -1089,16 +1090,17 @@ CircleCI is a cloud-based CI/CD platform that automates your build, test, and de
 
 ## Part 8 - Setting Up Docker Hub Credentials in CircleCI
 
-The publish job needs your Docker Hub username and password to push images.
+The publish job needs your Docker Hub username and personal access token to push images.
 
 **Important:** Never hardcode passwords! Use environment variables.
 
 ### Add Environment Variables
 
 1. In CircleCI, make sure you're viewing your **devops-demo** project
-2. Click **Project Settings** (gear icon, top-right)
-3. Click **Environment Variables** (left menu)
-4. Click **Add Environment Variable**
+2. Click **Organization Settings**
+3. Click on **Context** and create a new context called `docker-hub`
+4. Click **Environment Variables**
+5. Click **Add Environment Variable**
 
 **Add these two variables:**
 
@@ -1108,11 +1110,14 @@ The publish job needs your Docker Hub username and password to push images.
 - Click **Add Environment Variable**
 
 **Variable 2:**
-- **Name:** `DOCKER_PASSWORD`
-- **Value:** Your Docker Hub password
+- **Name:** `DOCKER_TOKEN`
+- **Value:** Your Docker Hub personal access token
 - Click **Add Environment Variable**
 
-> **Note — If you have 2FA enabled on Docker Hub:** Your regular password will NOT work for `docker login` if two-factor authentication is turned on for your Docker Hub account — it will fail with an `unauthorized` error even with the correct password. In that case, generate a **Docker Hub Access Token** instead (Docker Hub → Account Settings → Security → **New Access Token**), and use that token as the value for `DOCKER_PASSWORD` above. Everything else in this lesson stays exactly the same either way.
+> **Note — 2FA enabled on Docker Hub:** Using a regular password will NOT work for `docker login`, if two-factor authentication is turned on for your Docker Hub account — it will fail with an `unauthorized` error even with the correct password. For these reasons, it is recommended that you create a personal access token in **Docker Hub** (Docker Hub → Account Settings → Security → **New Access Token**).
+
+> **Note – Using OIDC:** Whenever possible do not use your password. Prefer a personal access token. However, in production, we typically prefer to use Open Identity Connect (OIDC). We are not using OIDC because this is only available in Docker Hub paid plans.
+
 
 **Why environment variables?**
 - ✅ Secure (CircleCI encrypts them)
