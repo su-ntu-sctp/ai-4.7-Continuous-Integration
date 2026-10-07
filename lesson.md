@@ -157,7 +157,7 @@ cd ~
 cd playground
 curl -L -O https://github.com/aie-devops/devops-demo/archive/refs/tags/v4.7.0.zip
 unzip v4.7.0.zip
-cd v4.7.0
+cd devops-demo-4.7.0
 ```
 
 Verify that everything is working properly.
@@ -887,6 +887,7 @@ workflows:
           requires:
             - build
       - publish:
+          context: docker-hub
           requires:
             - test
 ```
@@ -895,13 +896,14 @@ workflows:
 
 ```yml
 workflows:
-  build_test_publish:    # Workflow name
+  build_test_publish:      # Workflow name
     jobs:
       - build              # Step 1: Build runs first
       - test:              # Step 2: Test runs after build
           requires:
             - build        # Only if build succeeds
       - publish:           # Step 3: Publish runs after test
+          context: docker-hub
           requires:
             - test         # Only if test succeeds
 ```
@@ -1096,7 +1098,7 @@ The publish job needs your Docker Hub username and personal access token to push
 
 ### Create Personal Access Token in Docker Hub
 
-<img src="./assets/images/create-access-token.png" alt="Alt text" width="500">
+<img src="./assets/images/create-access-token.png" alt="create access token" width="500">
 
 1. Login to Docker Hub
 2. Head over to your account settings
@@ -1106,11 +1108,11 @@ The publish job needs your Docker Hub username and personal access token to push
 6. Expiration date: `90 days`
 7. Access permissions: `Repo Read & Write`
 
-<img src="./assets/images/copy-access-token.png" alt="Alt text" width="500">
+<img src="./assets/images/copy-access-token.png" alt="copy access token" width="500">
 
 ### Add Environment Variables in CircleCI
 
-<img src="./assets/images/create-context.png" alt="Alt text" width="600">
+<img src="./assets/images/create-context.png" alt="create context" width="600">
 
 1. In CircleCI, make sure you're viewing your **devops-demo** project
 2. Click **Organization Settings**
@@ -1130,12 +1132,11 @@ The publish job needs your Docker Hub username and personal access token to push
 - **Value:** Your Docker Hub personal access token
 - Click **Add Environment Variable**
 
-<img src="./assets/images/context-docker-hub.png" alt="Alt text" width="600">
+<img src="./assets/images/context-docker-hub.png" alt="context docker-hub" width="600">
 
 > **Note — 2FA enabled on Docker Hub:** Using a regular password will NOT work for `docker login`, if two-factor authentication is turned on for your Docker Hub account — it will fail with an `unauthorized` error even with the correct password. For these reasons, it is recommended that you create a personal access token in **Docker Hub** (Docker Hub → Account Settings → Security → **New Access Token**).
 
-> **Note – Using OIDC:** Whenever possible do not use your password. Prefer a personal access token. However, in production, we typically prefer to use Open Identity Connect (OIDC). We are not using OIDC because this is only available in Docker Hub paid plans.
-
+> **Note – Using OIDC:** Whenever possible do not use your password. Prefer a personal access token. In production, teams often avoid stored secrets entirely by using OpenID Connect (OIDC) with registries that support it, such as AWS ECR. Docker Hub doesn't support this for CI, so we use a scoped personal access token."
 
 **Why environment variables?**
 - ✅ Secure (CircleCI encrypts them)
@@ -1297,12 +1298,11 @@ Contact the organization owner/admin to grant CircleCI access to the repository 
 **Error:** `unauthorized: incorrect username or password`
 
 **Solution:**
-1. Go to CircleCI → Project Settings → Environment Variables
-2. Verify `DOCKER_USERNAME` and `DOCKER_PASSWORD` are correct
+1. Go to CircleCI → Organization Settings → Context → Environment Variables
+2. Verify `DOCKER_USERNAME` and `DOCKER_TOKEN` are correct
 3. Make sure there are no extra spaces
-4. If your Docker Hub account has 2FA enabled, use a Docker Hub **Access Token** instead of your password (see Part 8)
-5. Delete and re-add `DOCKER_PASSWORD` if needed
-6. Trigger a new build
+4. Delete and re-add `DOCKER_TOKEN` if needed
+5. Trigger a new build
 
 ---
 
