@@ -1096,7 +1096,7 @@ The publish job needs your Docker Hub username and personal access token to push
 
 ### Create Personal Access Token in Docker Hub
 
-![screenshot](./assets/images/create-access-token.png)
+<img src="./assets/images/create-access-token.png" alt="Alt text" width="500">
 
 1. Login to Docker Hub
 2. Head over to your account settings
@@ -1106,9 +1106,11 @@ The publish job needs your Docker Hub username and personal access token to push
 6. Expiration date: `90 days`
 7. Access permissions: `Repo Read & Write`
 
-![screenshot](./assets/images/copy-access-token.png)
+<img src="./assets/images/copy-access-token.png" alt="Alt text" width="500">
 
 ### Add Environment Variables in CircleCI
+
+<img src="./assets/images/create-context.png" alt="Alt text" width="600">
 
 1. In CircleCI, make sure you're viewing your **devops-demo** project
 2. Click **Organization Settings**
@@ -1127,6 +1129,8 @@ The publish job needs your Docker Hub username and personal access token to push
 - **Name:** `DOCKER_TOKEN`
 - **Value:** Your Docker Hub personal access token
 - Click **Add Environment Variable**
+
+<img src="./assets/images/context-docker-hub.png" alt="Alt text" width="600">
 
 > **Note — 2FA enabled on Docker Hub:** Using a regular password will NOT work for `docker login`, if two-factor authentication is turned on for your Docker Hub account — it will fail with an `unauthorized` error even with the correct password. For these reasons, it is recommended that you create a personal access token in **Docker Hub** (Docker Hub → Account Settings → Security → **New Access Token**).
 
